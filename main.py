@@ -13,28 +13,27 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # ----------------------------- CONFIG -----------------------------
 # مقداردهی از متغیر محیطی بهتر است؛ در صورت عدم وجود، مقادیر پیشفرض استفاده می‌شود.
-BOT_TOKEN = os.environ.get('BOT_TOKEN', '7476401114:AAGpXYSipVMpBZbH_hc4aRV2YfDCF_M1Qgg')
-ADMIN_ID = int(os.environ.get('ADMIN_ID', '1656900957'))  # آیدی عددی مدیر
+BOT_TOKEN = os.environ.get('BOT_TOKEN', 'REPLACE_WITH_YOUR_TOKEN')
+ADMIN_ID = int(os.environ.get('ADMIN_ID', '0'))  # آیدی عددی مدیر
 WEBHOOK_URL = os.environ.get('WEBHOOK_URL', None)  # مثلاً https://your-app.onrender.com/telegram
 
 # شهرها و لینک گروه هر شهر (لینک‌ها را بعداً جایگزین کن)
-CITIES = os.environ.get('CITIES', 'محمودآباد,سرخرود,آمل').split(',')
+CITIES = os.environ.get('CITIES', 'کما,سرخرود,دانشگاه').split(',')
 GROUP_LINKS = {
     # 'شهری که تو میدی': 'https://t.me/joinchat/XXXX'
-  'سرخرود':'https://t.me/+T0aHIzQeYgU2Yjk0'
 }
 # می‌تونی لینک‌ها رو در متغیر محیطی یا دستی در این دیکشنری قرار بدی.
 
 # زمان‌های کلاس قابل انتخاب (مثالی، می‌تونی این لیست رو از ENV هم بگیری)
-AVAILABLE_HOURS = os.environ.get('HOURS', '8,10,12,13,15,16,17,19').split(',')
+AVAILABLE_HOURS = os.environ.get('HOURS', '8,10,13,15,17,19').split(',')
 AVAILABLE_HOURS = [h.strip() for h in AVAILABLE_HOURS if h.strip()]
 
 # ظرفیت هر گروه
 GROUP_CAPACITY = int(os.environ.get('GROUP_CAPACITY', '4'))
 
 # زمان پاکسازی روزانه - به ساعت محلی سرور (مثال: 00:01)
-CLEANUP_HOUR = int(os.environ.get('CLEANUP_HOUR', '0'))#0
-CLEANUP_MINUTE = int(os.environ.get('CLEANUP_MINUTE', '1'))#1
+CLEANUP_HOUR = int(os.environ.get('CLEANUP_HOUR', '0'))
+CLEANUP_MINUTE = int(os.environ.get('CLEANUP_MINUTE', '1'))
 
 # ----------------------------- APP & BOT -----------------------------
 app = Flask(__name__)
@@ -345,10 +344,16 @@ cleanup_thread.start()
 
 @app.route('/telegram', methods=['POST'])
 def webhook():
-    if request.headers.get('content-type') == 'application/json':
+    # بعضی وقت‌ها Content-Type شامل charset است (مثال: 'application/json; charset=UTF-8')
+    ctype = request.headers.get('content-type','')
+    if ctype.startswith('application/json'):
         json_str = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_str)
-        bot.process_new_updates([update])
+        try:
+            update = telebot.types.Update.de_json(json_str)
+            bot.process_new_updates([update])
+        except Exception as e:
+            print('webhook process error:', e)
+            return '', 400
         return '', 200
     else:
         abort(403)
@@ -357,10 +362,13 @@ def webhook():
 def set_webhook():
     if not WEBHOOK_URL:
         return 'WEBHOOK_URL not set in environment', 400
-    res = bot.remove_webhook()
-    time.sleep(0.5)
-    ok = bot.set_webhook(url=WEBHOOK_URL)
-    return f'set webhook: {ok}'
+    try:
+        bot.remove_webhook()
+        time.sleep(0.5)
+        ok = bot.set_webhook(url=WEBHOOK_URL)
+        return f'set webhook: {ok}'
+    except Exception as e:
+        return f'error setting webhook: {e}', 500
 
 # healthcheck
 @app.route('/health', methods=['GET'])
@@ -369,12 +377,21 @@ def health():
 
 # ----------------------------- RUN -----------------------------
 if __name__ == '__main__':
-    # اگر از وبهوک استفاده نمیشه، می‌شه از polling هم استفاده کرد (برای تست)
-    #use_polling = os.environ.get('USE_POLLING','0') == '1'
-    #if use_polling:
-     #   print('Starting polling...')
-      #  bot.infinity_polling()
-   # else:
-        # Run Flask app (Render خودش وب سرور را اجرا می‌کند)
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    # برای توسعه محلی: اگر می‌خوای با polling تست کنی، متغیر USE_POLLING=1 را ست کن
+    use_polling = os.environ.get('USE_POLLING','0') == '1'
+    if use_polling:
+        print('Starting polling...')
+        bot.remove_webhook()
+        bot.infinity_polling()
+    else:
+        # اگر WEBHOOK_URL ست شده باشه، سعی می‌کنیم خودکار وبهوک رو ست کنیم
+        if WEBHOOK_URL:
+            try:
+                bot.remove_webhook()
+                time.sleep(0.5)
+                ok = bot.set_webhook(url=WEBHOOK_URL)
+                print('set webhook:', ok)
+            except Exception as e:
+                print('failed to set webhook:', e)
+        port = int(os.environ.get('PORT', 5000))
+        app.run(host='0.0.0.0', port=port)
