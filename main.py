@@ -20,14 +20,15 @@ API_TOKEN = "7476401114:AAGpXYSipVMpBZbH_hc4aRV2YfDCF_M1Qgg" #os.environ.get("BO
 WEBHOOK_URL = "https://snapp-umz.onrender.com"#os.environ.get("WEBHOOK_URL")
 WEBHOOK_PATH = f"/bot{API_TOKEN}"
 # شهرها و لینک گروه هر شهر (لینک‌ها را بعداً جایگزین کن)
-CITIES = os.environ.get('CITIES', 'کما,سرخرود,دانشگاه').split(',')
+CITIES = os.environ.get('CITIES', 'چالوس و نوشهر,آمل,بهشهر و نکا و گلوگاه ,نور و ایزدشهر,رویان و چمستان ,فریدونکنار,جویبار,قایمشهر ,محمودآباد ,ساری , بابل').split(',')
 GROUP_LINKS = {
     # 'شهری که تو میدی': 'https://t.me/joinchat/XXXX'
+    
 }
 # می‌تونی لینک‌ها رو در متغیر محیطی یا دستی در این دیکشنری قرار بدی.
 
 # زمان‌های کلاس قابل انتخاب (مثالی، می‌تونی این لیست رو از ENV هم بگیری)
-AVAILABLE_HOURS = os.environ.get('HOURS', '8,10,13,15,17,19').split(',')
+AVAILABLE_HOURS = os.environ.get('HOURS', '8,10,13,15,17,18,19').split(',')
 AVAILABLE_HOURS = [h.strip() for h in AVAILABLE_HOURS if h.strip()]
 
 # ظرفیت هر گروه
@@ -54,7 +55,7 @@ rides = {}
 for city in CITIES:
     rides[city] = {'رفت': {}, 'برگشت': {}}
     for t in ['رفت', 'برگشت']:
-        for d in ['شنبه','یک‌شنبه','دوشنبه','سه‌شنبه','چهارشنبه']:
+        for d in ['شنبه','دوشنبه','سه شنبه','یک‌شنبه','چهارشنبه']:
             rides[city][t][d] = {h: [] for h in AVAILABLE_HOURS}
 
 # groups ساخته‌شده: list of dicts {"city", "type", "day", "hour", "members": [ids], "created_at": datetime}
