@@ -370,11 +370,11 @@ def health():
 # ----------------------------- RUN -----------------------------
 if __name__ == '__main__':
     # اگر از وبهوک استفاده نمیشه، می‌شه از polling هم استفاده کرد (برای تست)
-    use_polling = os.environ.get('USE_POLLING','0') == '1'
-    if use_polling:
-        print('Starting polling...')
-        bot.infinity_polling()
-    else:
+    #use_polling = os.environ.get('USE_POLLING','0') == '1'
+    #if use_polling:
+     #   print('Starting polling...')
+      #  bot.infinity_polling()
+   # else:
         # Run Flask app (Render خودش وب سرور را اجرا می‌کند)
-        port = int(os.environ.get('PORT', 5000))
-        app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
