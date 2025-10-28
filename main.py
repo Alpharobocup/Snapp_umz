@@ -13,10 +13,12 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # ----------------------------- CONFIG -----------------------------
 # مقداردهی از متغیر محیطی بهتر است؛ در صورت عدم وجود، مقادیر پیشفرض استفاده می‌شود.
-BOT_TOKEN = os.environ.get('BOT_TOKEN', 'REPLACE_WITH_YOUR_TOKEN')
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '7476401114:AAGpXYSipVMpBZbH_hc4aRV2YfDCF_M1Qgg')
 ADMIN_ID = int(os.environ.get('ADMIN_ID', '0'))  # آیدی عددی مدیر
-WEBHOOK_URL = os.environ.get('WEBHOOK_URL', None)  # مثلاً https://your-app.onrender.com/telegram
-
+#WEBHOOK_URL = os.environ.get('WEBHOOK_URL', None)  # مثلاً https://your-app.onrender.com/telegram
+API_TOKEN = "7476401114:AAGpXYSipVMpBZbH_hc4aRV2YfDCF_M1Qgg" #os.environ.get("BOT_TOKEN")
+WEBHOOK_URL = "https://snapp-umz.onrender.com"#os.environ.get("WEBHOOK_URL")
+WEBHOOK_PATH = f"/bot{API_TOKEN}"
 # شهرها و لینک گروه هر شهر (لینک‌ها را بعداً جایگزین کن)
 CITIES = os.environ.get('CITIES', 'کما,سرخرود,دانشگاه').split(',')
 GROUP_LINKS = {
@@ -341,57 +343,22 @@ cleanup_thread = threading.Thread(target=daily_cleanup, daemon=True)
 cleanup_thread.start()
 
 # ----------------------------- FLASK ENDPOINTS (for webhook) -----------------------------
-
-@app.route('/telegram', methods=['POST'])
+@app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
-    # بعضی وقت‌ها Content-Type شامل charset است (مثال: 'application/json; charset=UTF-8')
-    ctype = request.headers.get('content-type','')
-    if ctype.startswith('application/json'):
-        json_str = request.get_data().decode('utf-8')
-        try:
-            update = telebot.types.Update.de_json(json_str)
-            bot.process_new_updates([update])
-        except Exception as e:
-            print('webhook process error:', e)
-            return '', 400
-        return '', 200
-    else:
-        abort(403)
+    if request.headers.get("content-type") == "application/json":
+        update = telebot.types.Update.de_json(request.data.decode("utf-8"))
+        bot.process_new_updates([update])
+        return "", 200
+    return "Forbidden", 403
 
-@app.route('/set_webhook', methods=['GET'])
-def set_webhook():
-    if not WEBHOOK_URL:
-        return 'WEBHOOK_URL not set in environment', 400
-    try:
-        bot.remove_webhook()
-        time.sleep(0.5)
-        ok = bot.set_webhook(url=WEBHOOK_URL)
-        return f'set webhook: {ok}'
-    except Exception as e:
-        return f'error setting webhook: {e}', 500
+@app.route("/", methods=["GET"])
+def index():
+    return "ربات فعال.", 200
 
-# healthcheck
-@app.route('/health', methods=['GET'])
-def health():
-    return 'OK', 200
 
-# ----------------------------- RUN -----------------------------
-if __name__ == '__main__':
-    # برای توسعه محلی: اگر می‌خوای با polling تست کنی، متغیر USE_POLLING=1 را ست کن
-    use_polling = os.environ.get('USE_POLLING','0') == '1'
-    if use_polling:
-        print('Starting polling...')
-        bot.remove_webhook()
-        bot.infinity_polling()
-    else:
-        # اگر WEBHOOK_URL ست شده باشه، سعی می‌کنیم خودکار وبهوک رو ست کنیم
-        if WEBHOOK_URL:
-            try:
-                bot.remove_webhook()
-                time.sleep(0.5)
-                ok = bot.set_webhook(url=WEBHOOK_URL)
-                print('set webhook:', ok)
-            except Exception as e:
-                print('failed to set webhook:', e)
-        port = int(os.environ.get('PORT', 5000))
-        app.run(host='0.0.0.0', port=port)
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    bot.remove_webhook()
+    bot.set_webhook(url=WEBHOOK_URL + WEBHOOK_PATH )
+    app.run(host="0.0.0.0", port=port)
